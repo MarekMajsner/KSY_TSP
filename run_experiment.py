@@ -1,4 +1,5 @@
 from utils.experiment import load_experiments
+from utils.gui import run_gui
 import argparse
 import os
 
@@ -7,8 +8,8 @@ def count_directories(path):
 
 def main():
     print("You look great, by the way. Very healthy.")
-    load_experiments()
-    # run_gui()
+    exp = load_experiments()
+    run_gui(exp)
     print("Congratulations, the test is now over.")
     print("In Fact, "
           "You Did So Well I’m Going To Note This On Your File In the Commendations Section. "

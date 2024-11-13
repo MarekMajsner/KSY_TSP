@@ -10,6 +10,7 @@ class TSP_experiment:
         self.optimal_distance = optimal_distance
         self.optimal_solution = optimal_solution
         self.image = None
+        self.image_path = image_path
         self.cwd = current_working_dir
         if image_path:
             try:
@@ -52,27 +53,37 @@ class TSP_experiment:
         self.image = Image.open(path)
         self.image_path = path
         print(self.image.size)
-        # plt.imshow(self.image)
-        # plt.axis('off')  # Hide the axis
-        # plt.show()
-        print("III")
 
 
+def count_directories(path):
+    return len(next(os.walk(path))[1])
 
 
-def load_experiments():
-    cwd = os.getcwd()
-    # Load the JSON data
-    with open(path, "r") as file:
-        locations = json.load(file)
-
-    # Display the loaded locations
-    for location in locations:
-        print(location)
-
-    # Json loading
-    print("Loading",exp_path)
-
-    # Create Experiments
+def load_experiments(num_experiments=None, single_experiment=None):
     experiments = []
+
+    path = os.getcwd()
+    path = os.path.join(path, "experiments")
+    if num_experiments is None:
+        num_experiments = count_directories(path)
+    print("Number of experiments:", num_experiments)
+    if not single_experiment is None:
+        print("Running sinlge experiment", single_experiment)
+
+    for i in range(num_experiments):
+        loc_path = os.path.join(path, str(i), str(i) + ".json")
+
+        # TODO: MAKE THIS WORK ANY NAME OF PNG AND JSON
+        # filelist = os.listdir('0')
+        # for fichier in filelist[:]:  # filelist[:] makes a copy of filelist.
+        #     if not (fichier.endswith(".png")):
+        #         filelist.remove(fichier)
+        #
+        with open(loc_path, "r") as file:
+            locations = json.load(file)
+
+        img_path = os.path.join(path , str(i), str(i) + ".png")
+        experiments.append(TSP_experiment(locations=locations,image_path=img_path))
+    # Create Experiments
+    # print(experiments[0].image_path)
     return experiments

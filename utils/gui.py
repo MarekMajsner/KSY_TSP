@@ -12,6 +12,7 @@ class InteractivePointsApp:
     def __init__(self, root, experiments=None, experiment_num=0):
         self.root = root
         self.root.title("TSP Human benchmark")
+        self.canvas = None
 
         # TODO: check for number of experiments in so exp_num is not bigger
         self.experiment_num = experiment_num
@@ -44,22 +45,25 @@ class InteractivePointsApp:
         root.mainloop()
 
     def load_next_experiment(self):
-
+        print("LOAD NEXT")
         if isinstance(self.experiments,TSP_experiment):
             self.current_experiment = self.experiments
         else:
-            assert self.experiment_num < len(self.current_experiment)
+            assert self.experiment_num < len(self.experiments)
             self.current_experiment = self.experiments[self.experiment_num]
-
+        # print(self.current_experiment.image_path)
         self.experiment_num += 1
 
-        self.image = tk.PhotoImage(file=self.experiments.image_path)
+        self.image = tk.PhotoImage(file=self.current_experiment.image_path)
         width = self.image.width()
         height = self.image.height()
+        if not self.canvas is None:
+            self.canvas.delete("all")
+            self.canvas.pack
         # Canvas for drawing
-        self.canvas = tk.Canvas(root, width=width, height=height, bg="white")
-        # self.canvas.pack(anchor=tk.CENTER, expand=True)
-        self.canvas.pack()
+        self.canvas = tk.Canvas(self.root, width=width, height=height, bg="white")
+        self.canvas.pack(anchor=tk.CENTER, expand=True)
+        # self.canvas.pack()
 
         self.canvas.create_image(
             (width / 2, height / 2),
@@ -68,20 +72,21 @@ class InteractivePointsApp:
         # Draw points on canvas
         self.draw_points()
 
-
-
     def button_clicked(self):
-        # showinfo(
-        #     title='Information',
-        #     message='Download button clicked!'
-        # )
         self.read_text_input()
-        if self.experiment_end:
+
+        if self.experiment_end():
             showinfo(
                 title="Congratulations, the test is now over.",
                 message="In Fact, "
                         "You Did So Well I’m Going To Note This On Your File In the Commendations Section. "
                         "Oh, There’s Lots Of Room Here." )
+            self.root.destroy()
+        else:
+            showinfo(
+                title="NEXT",
+                message="GOOD JOB!!!")
+            self.load_next_experiment()
 
 
     def experiment_end(self):
@@ -98,6 +103,7 @@ class InteractivePointsApp:
             point_id = self.canvas.create_oval(x - 5, y - 5, x + 5, y + 5, fill="blue", outline="black")
             # Store point data as tags
             self.canvas.itemconfig(point_id, tags=(point["name"],))
+            # print(point_id)
             # Bind click event
             self.canvas.tag_bind(point_id, "<Button-1>", lambda event, p=point: self.on_point_click(event, p))
 
@@ -105,12 +111,14 @@ class InteractivePointsApp:
         """Handle point click event."""
         print(f"Clicked on point: {point['name']} at ({point['x']}, {point['y']})")
         self.selected_points.append(point)
+        self.highlight_point(point)
 
         # If two points are selected, either draw or delete a line
         if len(self.selected_points) == 2:
             p1, p2 = self.selected_points
             self.toggle_line_between_points(p1, p2)
             self.selected_points.clear()
+            self.reset_point_colors(p1, p2)
 
 
     def toggle_line_between_points(self, p1, p2):
@@ -129,6 +137,19 @@ class InteractivePointsApp:
             self.lines[point_pair] = line_id
             print(f"Drew line between {p1['name']} and {p2['name']}")
 
+    def highlight_point(self, point):
+        """Change the color of the selected point to indicate selection."""
+        print(point["name"])
+        point = self.canvas.find_withtag(point["name"])
+        self.canvas.itemconfig(point, fill="green")  # Change color to green
+
+    def reset_point_colors(self,point1,point2):
+        point = self.canvas.find_withtag(point1["name"])
+        self.canvas.itemconfig(point, fill="blue")
+
+        point = self.canvas.find_withtag(point2["name"])
+        self.canvas.itemconfig(point, fill="blue")
+
     def read_text_input(self):
         """Reads the text from the input field and prints it."""
         text = self.text_input.get()
@@ -136,6 +157,11 @@ class InteractivePointsApp:
 
 def count_directories(path):
     return len(next(os.walk(path))[1])
+
+def run_gui(experiments):
+    root = tk.Tk()
+    app = InteractivePointsApp(root, experiments=experiments)
+    root.mainloop()
 
 if __name__ == "__main__":
     path = os.path.split(os.getcwd())[0]
