@@ -37,7 +37,7 @@ class TSP_experiment:
             print("No image to display.")
 
     def __str__(self):
-        return f"Location(name={self.name}, x={self.x}, y={self.y}, distance={self.distance})"
+        return f"Location()"
 
     def create_test_exp(self):
         """This function expects the existence of Experiment 0 in /experiments"""

@@ -1,6 +1,9 @@
 from utils.experiment import load_experiments
 import argparse
+import os
 
+def count_directories(path):
+    return len(next(os.walk(path))[1])
 
 def main():
     print("You look great, by the way. Very healthy.")
