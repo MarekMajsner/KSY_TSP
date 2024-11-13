@@ -5,60 +5,62 @@ from tkinter.messagebox import showinfo
 from utils.experiment import TSP_experiment
 from utils.experiment import load_experiments
 
-CANVAS_WIDTH = 500
-CANVAS_HEIGHT = 500
+CANVAS_WIDTH = 332
+CANVAS_HEIGHT = 332
 
 class InteractivePointsApp:
     def __init__(self, root, experiments=None, experiment_num=0):
         self.root = root
         self.root.title("TSP Human benchmark")
 
+        # TODO: check for number of experiments in so exp_num is not bigger
         assert experiment_num >= 0
         self.experiment_num = experiment_num
-
         self.experiments = experiments
 
-        self.current_experiment = experiments
+        if isinstance(experiments,TSP_experiment):
+            self.current_experiment = experiments
+        else:
+            self.current_experiment = experiments[0]
 
-        width = CANVAS_WIDTH
-        height = CANVAS_HEIGHT
-        # Canvas for drawing
-        self.canvas = tk.Canvas(root, width=width, height=height, bg="white")
-        # self.canvas.pack(anchor=tk.CENTER, expand=True)
-        self.canvas.pack()
-
-        # Show experiment
-        python_image = tk.PhotoImage(file=self.experiments.image_path)
-        self.canvas.create_image(
-            (200, 200),
-            image=python_image
-        )
-        # Draw points on canvas
-        self.draw_points()
-        # Create a text input field
+        # Text input field
         self.text_input = tk.Entry(root)
         self.text_input.pack(pady=10)
-
-
+        # Submit button
         submit_button = tk.Button(
             root,
             text='Submit',
             compound=tk.LEFT,
             command=self.button_clicked
         )
-
         submit_button.pack(
             ipadx=5,
             ipady=5,
             expand=True
         )
 
-
-        self.experiment_num = 0
-
         # Store selected points for drawing lines
         self.selected_points = []
 
+        # TODO: make this funtion
+        # (image.width(), image.height())
+        # width = CANVAS_WIDTH
+        # height = CANVAS_HEIGHT
+        # # Canvas for drawing
+        # self.canvas = tk.Canvas(root, width=width, height=height, bg="white")
+        # # self.canvas.pack(anchor=tk.CENTER, expand=True)
+        # self.canvas.pack()
+        #
+        # # Show experiment
+        # python_image = tk.PhotoImage(file=self.experiments.image_path)
+        #
+        # self.canvas.create_image(
+        #     (CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2),
+        #     image=python_image
+        # )
+        # # Draw points on canvas
+        # self.draw_points()
+        #
         root.mainloop()
 
     def load_next_experiment(self):
