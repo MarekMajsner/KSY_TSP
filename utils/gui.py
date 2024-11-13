@@ -14,14 +14,11 @@ class InteractivePointsApp:
         self.root.title("TSP Human benchmark")
 
         # TODO: check for number of experiments in so exp_num is not bigger
-        assert experiment_num >= 0
         self.experiment_num = experiment_num
         self.experiments = experiments
 
-        if isinstance(experiments,TSP_experiment):
-            self.current_experiment = experiments
-        else:
-            self.current_experiment = experiments[0]
+        assert experiment_num >= 0
+        self.load_next_experiment()
 
         # Text input field
         self.text_input = tk.Entry(root)
@@ -41,31 +38,36 @@ class InteractivePointsApp:
 
         # Store selected points for drawing lines
         self.selected_points = []
+        self.lines = {}
 
-        # TODO: make this funtion
-        # (image.width(), image.height())
-        # width = CANVAS_WIDTH
-        # height = CANVAS_HEIGHT
-        # # Canvas for drawing
-        # self.canvas = tk.Canvas(root, width=width, height=height, bg="white")
-        # # self.canvas.pack(anchor=tk.CENTER, expand=True)
-        # self.canvas.pack()
-        #
-        # # Show experiment
-        # python_image = tk.PhotoImage(file=self.experiments.image_path)
-        #
-        # self.canvas.create_image(
-        #     (CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2),
-        #     image=python_image
-        # )
-        # # Draw points on canvas
-        # self.draw_points()
-        #
+
         root.mainloop()
 
     def load_next_experiment(self):
-        self.current_experiment = self.experiments[self.experiment_num]
+
+        if isinstance(self.experiments,TSP_experiment):
+            self.current_experiment = self.experiments
+        else:
+            assert self.experiment_num < len(self.current_experiment)
+            self.current_experiment = self.experiments[self.experiment_num]
+
         self.experiment_num += 1
+
+        self.image = tk.PhotoImage(file=self.experiments.image_path)
+        width = self.image.width()
+        height = self.image.height()
+        # Canvas for drawing
+        self.canvas = tk.Canvas(root, width=width, height=height, bg="white")
+        # self.canvas.pack(anchor=tk.CENTER, expand=True)
+        self.canvas.pack()
+
+        self.canvas.create_image(
+            (width / 2, height / 2),
+            image=self.image
+        )
+        # Draw points on canvas
+        self.draw_points()
+
 
 
     def button_clicked(self):
@@ -104,18 +106,28 @@ class InteractivePointsApp:
         print(f"Clicked on point: {point['name']} at ({point['x']}, {point['y']})")
         self.selected_points.append(point)
 
-        # If two points are selected, draw a line
+        # If two points are selected, either draw or delete a line
         if len(self.selected_points) == 2:
-            self.draw_line_between_points()
+            p1, p2 = self.selected_points
+            self.toggle_line_between_points(p1, p2)
             self.selected_points.clear()
 
-    def draw_line_between_points(self):
-        """Draw a line between two selected points."""
-        p1, p2 = self.selected_points
-        x1, y1 = p1["x"], p1["y"]
-        x2, y2 = p2["x"], p2["y"]
-        self.canvas.create_line(x1, y1, x2, y2, fill="red", width=2)
-        print(f"Drew line between {p1['name']} and {p2['name']}")
+
+    def toggle_line_between_points(self, p1, p2):
+        """Toggle line between two selected points: draw if not present, delete if present."""
+        point_pair = tuple(sorted((p1["name"], p2["name"])))  # Sort to avoid order issues
+        if point_pair in self.lines:
+            # Line exists; delete it
+            self.canvas.delete(self.lines[point_pair])
+            del self.lines[point_pair]
+            print(f"Deleted line between {p1['name']} and {p2['name']}")
+        else:
+            # Line does not exist; create it
+            x1, y1 = p1["x"], p1["y"]
+            x2, y2 = p2["x"], p2["y"]
+            line_id = self.canvas.create_line(x1, y1, x2, y2, fill="red", width=2)
+            self.lines[point_pair] = line_id
+            print(f"Drew line between {p1['name']} and {p2['name']}")
 
     def read_text_input(self):
         """Reads the text from the input field and prints it."""
