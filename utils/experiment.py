@@ -5,23 +5,64 @@ import json
 import matplotlib.pyplot as plt
 
 class TSP_experiment:
-    def __init__(self, locations=None, optimal_distance=0,optimal_solution=None , image_path=None, current_working_dir=None):
-        self.locations = locations
-        self.optimal_distance = optimal_distance
-        self.optimal_solution = optimal_solution
-        self.image = None
-        self.image_path = image_path
-        self.cwd = current_working_dir
-        if image_path:
+    def __init__(self, map_info=None, map_solution=None, image_path_exp=None, image_path_sol=None):
+        print(map_info)
+        self.locations = None
+        self.image_path_exp = image_path_exp
+        if self.image_path_exp:
             try:
-                self.image = Image.open(image_path)
+                self.image = Image.open(self.image_path_exp)
             except Exception as e:
-                print(f"Error loading image: {e}")
+                raise f"Error loading image: {e}"
 
-    def set_position(self, x, y):
-        """Set new x and y positions."""
-        self.x = x
-        self.y = y
+        if not map_info is None:
+            """ 
+            LOAD MAP INFO
+            """
+            self.map_info = map_info["map_info"]
+            self.max_x = float(self.map_info["lim_x_max"])
+            self.max_y = float(self.map_info["lim_y_max"])
+            self.xscale = 322 / float(self.map_info["lim_x_max"])
+            self.x_offset = 5
+            """ 
+            LOAD EXPERIMENT POINTS
+            """
+            self.locations = map_info["points"]
+            print(self.locations)
+            self.points_pos_resize()
+            print(self.locations)
+        if not map_info is None:
+            print("TODO")
+
+        self.optimal_distance = 0
+        self.image = None
+
+        # self.image_path_exp = image_path_exp
+        self.image_path_sol = None
+
+    def points_pos_resize(self):
+        for entry in self.locations:
+            self.points_pos_string_to_float(entry)
+            self.flip_pos_axis(entry)
+            self.scale_pos(entry)
+            self.border_offset(entry)
+
+    def border_offset(self,entry):
+        entry['x'] = entry['x']+self.x_offset
+        entry['y'] = entry['y'] +self.x_offset
+
+    def points_pos_string_to_float(self,entry):
+        entry['x'] = float(entry['x'])
+        entry['y'] = float(entry['y'])
+
+    def flip_pos_axis(self,entry):
+        entry['x'] = entry['x']
+        entry['y'] = self.max_y - entry['y']
+
+
+    def scale_pos(self,entry):
+        entry['x'] = entry['x']*self.xscale
+        entry['y'] = entry['y']*self.xscale
 
     def calculate_distance(self, other):
         """Calculate distance to another Location instance."""
@@ -40,50 +81,125 @@ class TSP_experiment:
     def __str__(self):
         return f"Location()"
 
-    def create_test_exp(self):
-        """This function expects the existence of Experiment 0 in /experiments"""
-        assert self.cwd is not None
-        path = os.path.join(self.cwd, "experiments", "0", "0.json")
-        with open(path, "r") as file:
-            locations = json.load(file)
-        self.locations = locations
 
-        path = os.path.join(self.cwd, "experiments", "0", "0.png")
+    # def load_experiment(self,path):
 
-        self.image = Image.open(path)
-        self.image_path = path
-        print(self.image.size)
+def create_test_exp(name = "0", path=None):
+    """
+    This function loads single experiment specified by number
+    (It is expected that all experiment names are numbers)
+    :param name: name of experiment to be loaded
+    :param path: Path to experiments folder
+    """
+    # Load experiment problem
+    if path is None:
+        path = os.path.split(os.getcwd())[0]
+    prob_path = os.path.join(path, "experiments", "problems")
+    sol_path = os.path.join(path, "experiments", "solutions")
 
+    json_path = os.path.join(prob_path, name + ".json")
+    with open(json_path, "r") as file:
+        exp_params = json.load(file)
+
+
+    print(exp_params)
+
+    png_path = os.path.join(prob_path, name + ".png")
+    print(png_path)
+    image = Image.open(png_path)
+    image_path = png_path
+    # print(image.size)
+    # Load solution to experiment
+    print(exp_params['points'])
+    example_exp = TSP_experiment(map_info=exp_params, image_path_exp=png_path, image_path_sol=None)
+    return example_exp
 
 def count_directories(path):
     return len(next(os.walk(path))[1])
 
+def list_json_files(directory):
+    """
+    Returns a list of all JSON file names in the given directory.
+
+    :param directory: Path to the directory to search for JSON files.
+    :return: List of JSON file names (with extension).
+    """
+    try:
+        # List all files in the directory and filter for .json files
+        json_files = [file for file in os.listdir(directory) if file.endswith('.json')]
+        return json_files
+    except FileNotFoundError:
+        print(f"Error: The directory '{directory}' does not exist.")
+        return []
+    except PermissionError:
+        print(f"Error: Permission denied for accessing the directory '{directory}'.")
+        return []
+
+def isEmpty(path):
+    if os.path.exists(path) and not os.path.isfile(path):
+
+        # Checking if the directory is empty or not
+        if not os.listdir(path):
+            print("Empty directory")
+        else:
+            print("Not empty directory")
+    else:
+        print("The path is either for a file or not valid")
+
+
+def find_all_experiments(directory):
+    """
+    Retrieves all PNG and JSON file pairs in the specified directory.
+
+    Args:
+        directory (str): The path to the directory to scan.
+
+    Returns:
+        list of tuples: List of (png_file, json_file) pairs.
+    """
+    # Ensure the directory exists
+    if not os.path.isdir(directory):
+        raise ValueError(f"The provided path '{directory}' is not a valid directory.")
+
+    # List all files in the directory
+    files = os.listdir(directory)
+
+    # Filter files by extensions
+    png_files = {os.path.splitext(f)[0]: f for f in files if f.lower().endswith('.png')}
+    json_files = {os.path.splitext(f)[0]: f for f in files if f.lower().endswith('.json')}
+
+    # Find matching pairs based on the base file name
+    pairs = [(png_files[name], json_files[name]) for name in png_files if name in json_files]
+
+    return pairs
 
 def load_experiments(num_experiments=None, single_experiment=None):
     experiments = []
 
     path = os.getcwd()
-    path = os.path.join(path, "experiments")
-    if num_experiments is None:
-        num_experiments = count_directories(path)
-    print("Number of experiments:", num_experiments)
+    prob_path = os.path.join(path, "experiments", "problems")
+    sol_path = os.path.join(path, "experiments", "solutions")
+
     if not single_experiment is None:
-        print("Running sinlge experiment", single_experiment)
+        print("Running single experiment", single_experiment)
 
-    for i in range(num_experiments):
-        loc_path = os.path.join(path, str(i), str(i) + ".json")
+    experiments_pairs = find_all_experiments(prob_path)
 
-        # TODO: MAKE THIS WORK ANY NAME OF PNG AND JSON
-        # filelist = os.listdir('0')
-        # for fichier in filelist[:]:  # filelist[:] makes a copy of filelist.
-        #     if not (fichier.endswith(".png")):
-        #         filelist.remove(fichier)
-        #
-        with open(loc_path, "r") as file:
-            locations = json.load(file)
+    print("Number of experiments:", len(experiments_pairs)/2)
+    print(experiments_pairs)
+    for i in range(len(experiments_pairs)):
+        exp_name_json = experiments_pairs[i][1]
+        exp_name_png =  experiments_pairs[i][2]
+        print(exp_name_png)
+        print(exp_name_json)
+        exp_path_png = os.path.join(prob_path, exp_name_png)
+        exp_path_json = os.path.join(prob_path, exp_name_json)
 
-        img_path = os.path.join(path , str(i), str(i) + ".png")
-        experiments.append(TSP_experiment(locations=locations,image_path=img_path))
-    # Create Experiments
-    # print(experiments[0].image_path)
+        if os.path.isfile(exp_path_json):
+            with open(exp_path_json, "r") as file:
+                exp_params = json.load(file)
+
+        print(exp_params('map_info'))
+
+        experiments.append(TSP_experiment(map_info=exp_params, image_path_exp=exp_path_png))
     return experiments

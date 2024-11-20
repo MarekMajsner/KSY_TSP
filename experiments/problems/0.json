@@ -11,5 +11,6 @@
     {"x": 146, "y": 81, "radius": 20, "name": "Point10"},
     {"x": 19, "y": 289, "radius": 20, "name": "Point11"},
     {"x": 303, "y": 223, "radius": 20, "name": "Point12"},
-    {"x": 299, "y": 35, "radius": 19, "name": "Point13"}
+    {"x": 299, "y": 35, "radius": 19, "name": "Point13"},
+    {"x": 10, "y": 10, "radius": 19, "name": "Point14"}
 ]

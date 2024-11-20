@@ -2,17 +2,26 @@ import json
 import os
 import tkinter as tk
 from tkinter.messagebox import showinfo
-from utils.experiment import TSP_experiment
+from utils.experiment import TSP_experiment, create_test_exp
 from utils.experiment import load_experiments
+from sys import platform
 
 CANVAS_WIDTH = 332
 CANVAS_HEIGHT = 332
-
+RADIUS = 20
 class InteractivePointsApp:
-    def __init__(self, root, experiments=None, experiment_num=0):
-        self.root = root
-        self.root.title("TSP Human benchmark")
+    def __init__(self, experiments=None, experiment_num=0, args = None):
+        # Window init
+        self.master = tk.Tk()
+        self.master.title("TSP Human benchmark")
         self.canvas = None
+
+        # if platform == "linux" or platform == "linux2":
+        #     self.master.overrideredirect(True)
+        #     self.master.wait_visibility(self.master)
+        #     self.master.wm_attributes("-alpha", 0.5)
+
+        # self.master.wm_attributes("-transparentcolor", "white")
 
         # TODO: check for number of experiments in so exp_num is not bigger
         self.experiment_num = experiment_num
@@ -22,11 +31,11 @@ class InteractivePointsApp:
         self.load_next_experiment()
 
         # Text input field
-        self.text_input = tk.Entry(root)
-        self.text_input.pack(pady=10)
+        # self.text_input = tk.Entry(self.master)
+        # self.text_input.pack(pady=10)
         # Submit button
         submit_button = tk.Button(
-            root,
+            self.master,
             text='Submit',
             compound=tk.LEFT,
             command=self.button_clicked
@@ -41,8 +50,12 @@ class InteractivePointsApp:
         self.selected_points = []
         self.lines = {}
 
+        # Data logs
+        self.current_path_len = 0
+        self.optimal_path_len = 0
 
-        root.mainloop()
+
+        self.master.mainloop()
 
     def load_next_experiment(self):
         print("LOAD NEXT")
@@ -54,16 +67,21 @@ class InteractivePointsApp:
         # print(self.current_experiment.image_path)
         self.experiment_num += 1
 
-        self.image = tk.PhotoImage(file=self.current_experiment.image_path)
+        self.image = tk.PhotoImage(file=self.current_experiment.image_path_exp)
         width = self.image.width()
         height = self.image.height()
-        if not self.canvas is None:
+        if self.canvas is None:
+            # Canvas for drawing
+            self.canvas = tk.Canvas(self.master, width=width, height=height, bg="white")
+            self.canvas.pack(anchor=tk.CENTER, expand=True)
+        else:
             self.canvas.delete("all")
-            self.canvas.pack
-        # Canvas for drawing
-        self.canvas = tk.Canvas(self.root, width=width, height=height, bg="white")
-        self.canvas.pack(anchor=tk.CENTER, expand=True)
-        # self.canvas.pack()
+            # Canvas for drawing
+            self.canvas.width = width
+
+                           # (self.root, width=width, height=height, bg="white"))
+            self.canvas.pack(anchor=tk.CENTER, expand=True)
+            # self.canvas.pack()
 
         self.canvas.create_image(
             (width / 2, height / 2),
@@ -100,9 +118,11 @@ class InteractivePointsApp:
         for point in points:
             x, y = point["x"], point["y"]
             # Draw a small circle to represent the point
-            point_id = self.canvas.create_oval(x - 5, y - 5, x + 5, y + 5, fill="blue", outline="black")
+            point_id = self.canvas.create_oval(x - RADIUS, y - RADIUS, x + RADIUS, y + RADIUS,
+                                               outline="black",fill="white",stipple="gray50")
             # Store point data as tags
-            self.canvas.itemconfig(point_id, tags=(point["name"],))
+            self.canvas.itemconfig(point_id, tags=("point"+point["name"],))
+            # self.canvas.itemconfig(point_id,"-alpha",0.5)
             # print(point_id)
             # Bind click event
             self.canvas.tag_bind(point_id, "<Button-1>", lambda event, p=point: self.on_point_click(event, p))
@@ -112,6 +132,7 @@ class InteractivePointsApp:
         print(f"Clicked on point: {point['name']} at ({point['x']}, {point['y']})")
         self.selected_points.append(point)
         self.highlight_point(point)
+        # ADD DESELECT HANDLE
 
         # If two points are selected, either draw or delete a line
         if len(self.selected_points) == 2:
@@ -165,9 +186,15 @@ def run_gui(experiments):
 
 if __name__ == "__main__":
     path = os.path.split(os.getcwd())[0]
-    example_exp = TSP_experiment(current_working_dir=path)
-    example_exp.create_test_exp()
+    example_exp = create_test_exp("14")
 
-    root = tk.Tk()
-    app = InteractivePointsApp(root,experiments=example_exp)
-    root.mainloop()
+    app = InteractivePointsApp(experiments=example_exp)
+    # app.root.mainloop()
+
+    # TODO: SAY CURRENT VS OPTIMAL DISTANCE
+    # GIVE AI CHANCE TO FIX
+    # TODO: DISTANCE, PORADI BODY, CAS, NUMBER OF ACTIONS
+    # Create strat screen for final experiment
+
+    # OTAZKY DAN
+    # JAK KOLIK PIXELU JE BORDER JE vzdy stejna
