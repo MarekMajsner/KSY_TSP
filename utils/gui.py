@@ -2,6 +2,7 @@ import json
 import os
 import tkinter as tk
 from tkinter.messagebox import showinfo
+import time
 
 from scipy.stats import false_discovery_control
 
@@ -18,14 +19,15 @@ class InteractivePointsApp:
         :param experiments:
         :param args:
         """
-        self.exp_data = {}
+        self.data_log = {}
         self.log_data = False
         if not args is None:
-            self.log_data = True
+            self.log_data = not args.nologs
         self.experiments = experiments
 
         self.total_num_experiments = len(self.experiments)
         self.experiment_num = 0
+        self.current_experiment = self.experiments[self.experiment_num]
 
         self.radius = RADIUS
         """tkinter window init"""
@@ -58,32 +60,38 @@ class InteractivePointsApp:
         self.current_path_len = 0
         self.optimal_path_len = 0
 
+
+        # self.optimal_path_len = self.experiments[self.experiment_num].optimal_distance
+        # print("AAAAAAAAAAAAAAAAAAAAAAA", self.optimal_path_len)
+        self.num_actions = 0
+
         # Create text widget and specify size.
         # T = tk.Text(self.master, height=5, width=52)
         # T.pack()
-
+        # "DEBUG" LABELS
         self.time_label = tk.Label(self.master, font=("Arial", 16), fg="blue")
         self.time_label.pack(pady=10)
+        self.start = time.time()
         self.update_time()
-
         # Other initializations (e.g., canvas, buttons, etc.)
         self.master.mainloop()
+
 
     def update_time(self):
         """Update the time widget with the current time."""
         current_time = datetime.now().strftime("%H:%M:%S")
-        self.time_label.config(text=f"Current Time: {current_time}")
+        end = time.time()
+        length = end - self.start
+
+        length = convert_format(length)
+        self.time_label.config(text=f"Current Time: {length}")
         # Schedule the next update
         self.master.after(1000, self.update_time)  # Update every 1000ms (1 second)
 
     def load_next_experiment(self):
-        print("LOAD NEXT")
-        if isinstance(self.experiments,TSP_experiment):
-            self.current_experiment = self.experiments
-        else:
-            assert self.experiment_num < len(self.experiments)
-            self.current_experiment = self.experiments[self.experiment_num]
-        # print(self.current_experiment.image_path)
+
+        assert self.experiment_num < len(self.experiments)
+        self.current_experiment = self.experiments[self.experiment_num]
         self.experiment_num += 1
 
         self.image = tk.PhotoImage(file=self.current_experiment.image_path_exp)
@@ -113,8 +121,7 @@ class InteractivePointsApp:
         # Reset data
         self.lines = {}
         self.selected_points = []
-        self.current_path_len = 0
-        self.optimal_path_len = 0
+        self.start = time.time()
 
 
     def log_experiment(self):
@@ -127,12 +134,15 @@ class InteractivePointsApp:
                 "point1": point_pair[0],
                 "point2": point_pair[1]
             })
-
+        end = time.time()
+        length = end - self.start
         # Save the path to a JSON file
-        self.exp_data = {
-            "experiment": self.experiment_num,
-            "path": path_points
+        exp_data = {
+            "path": path_points,
+            "time": length
         }
+        self.data_log[self.current_experiment.exp_name] = exp_data
+
 
 
     def save_logs(self):
@@ -142,12 +152,13 @@ class InteractivePointsApp:
         file_name = os.path.join("tests_runs",file_name)
         try:
             with open(file_name, "w") as file:
-                json.dump(self.exp_data, file, indent=4)
+                json.dump(self.data_log, file, indent=4)
             print(f"Path saved successfully to {file_name}.")
         except Exception as e:
             print(f"Error saving path: {e}")
 
     def button_clicked(self):
+        # TODO: Simple check if all points are used
         self.log_experiment()
 
         if self.experiment_end():
@@ -155,7 +166,7 @@ class InteractivePointsApp:
                 title="Congratulations, the test is now over.",
                 message="In Fact, "
                         "You Did So Well I’m Going To Note This On Your File In the Commendations Section. "
-                        "Oh, There’s Lots Of Room Here." )
+                        "Oh, There’s Lots Of Room Here.")
             if self.log_data:
                 self.save_logs()
             self.master.destroy()
@@ -242,25 +253,21 @@ class InteractivePointsApp:
 def count_directories(path):
     return len(next(os.walk(path))[1])
 
-def run_gui(experiments):
-    InteractivePointsApp(experiments=experiments)
-#
-# def reset_timer(event=None):
-#     global after_id
-#     if after_id is not None:
-#         root.after_cancel(after_id)
-#     after_id = root.after(5000, session_end)
+
+def convert_format(sec):
+   sec = sec % (24 * 3600)
+   hour = sec // 3600
+   sec %= 3600
+   min = sec // 60
+   sec %= 60
+   return "%02d:%02d:%02d" % (hour, min, sec)
 
 if __name__ == "__main__":
     path = os.path.split(os.getcwd())[0]
-    example_exp = create_test_exp("14")
+    example_exp = create_test_exp("14",path)
 
     app = InteractivePointsApp(experiments=[example_exp])
 
     # TODO: SAY CURRENT VS OPTIMAL DISTANCE
-    # GIVE AI CHANCE TO FIX
-    # TODO: DISTANCE, PORADI BODY, CAS, NUMBER OF ACTIONS
-    # Create strat screen for final experiment
-
-    # OTAZKY DAN
-    # JAK KOLIK PIXELU JE BORDER JE vzdy stejna
+    # TODO: DISTANCE, NUMBER OF ACTIONS
+    # TODO: Create intro screen

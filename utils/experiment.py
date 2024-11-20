@@ -51,8 +51,8 @@ class TSP_experiment:
 
         if not map_solution is None:
             self.map_solution = map_solution
-            print("TODO")
-            self.optimal_distance = 0
+            # TODO: create funtion to compute the length from the order to check for scaling issues
+            self.optimal_distance = float(self.map_solution["map_info"]["length"])*self.xscale
             self.image_path_sol = None
 
     def points_pos_resize(self):
@@ -93,7 +93,7 @@ class TSP_experiment:
             print("No image to display.")
 
     def __str__(self):
-        return f"Location()"
+        return f"TSP_Experiment()"
 
 
 def create_test_exp(name = "0", path=None):
@@ -105,7 +105,7 @@ def create_test_exp(name = "0", path=None):
     """
     # Load experiment problem
     if path is None:
-        path = os.path.split(os.getcwd())[0]
+        path = os.getcwd()
     prob_path = os.path.join(path, "experiments", "problems")
     sol_path = os.path.join(path, "experiments", "solutions")
 
@@ -155,6 +155,10 @@ def isEmpty(path):
 
 
 def load_experiments(args=None):
+    if not args.name is None:
+        example_exp = create_test_exp(args.filename)
+        return [example_exp]
+
     experiments = []
 
     path = os.getcwd()

@@ -15,8 +15,8 @@ if __name__=="__main__":
     parser.add_argument('-d', '--debug',
                         action='store_true')
     parser.add_argument('-l', '--nologs',
-                        action='store_false')
-    parser.add_argument('-t', '--test')  # option that takes a value
+                        action='store_true')
+    parser.add_argument('-n','--name')
     args = parser.parse_args()
     print(args)
     main(args)
