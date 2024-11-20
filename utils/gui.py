@@ -2,38 +2,42 @@ import json
 import os
 import tkinter as tk
 from tkinter.messagebox import showinfo
+
+from scipy.stats import false_discovery_control
+
 from utils.experiment import TSP_experiment, create_test_exp
-from utils.experiment import load_experiments
-from sys import platform
+from datetime import datetime
 
 CANVAS_WIDTH = 332
 CANVAS_HEIGHT = 332
 RADIUS = 20
 class InteractivePointsApp:
-    def __init__(self, experiments=None, experiment_num=0, args = None):
-        # Window init
+    def __init__(self, experiments=None, args = None):
+        """
+
+        :param experiments:
+        :param args:
+        """
+        self.exp_data = {}
+        self.log_data = False
+        if not args is None:
+            self.log_data = True
+        self.experiments = experiments
+
+        self.total_num_experiments = len(self.experiments)
+        self.experiment_num = 0
+
+        self.radius = RADIUS
+        """tkinter window init"""
         self.master = tk.Tk()
         self.master.title("TSP Human benchmark")
         self.canvas = None
 
-        # if platform == "linux" or platform == "linux2":
-        #     self.master.overrideredirect(True)
-        #     self.master.wait_visibility(self.master)
-        #     self.master.wm_attributes("-alpha", 0.5)
-
-        # self.master.wm_attributes("-transparentcolor", "white")
-
-        # TODO: check for number of experiments in so exp_num is not bigger
-        self.experiment_num = experiment_num
-        self.experiments = experiments
-
-        assert experiment_num >= 0
+        # TODO: ADD INTRO SCREEN WITH DESCRIPTION AND HELP
         self.load_next_experiment()
 
-        # Text input field
-        # self.text_input = tk.Entry(self.master)
-        # self.text_input.pack(pady=10)
-        # Submit button
+
+        """Submit button"""
         submit_button = tk.Button(
             self.master,
             text='Submit',
@@ -47,15 +51,30 @@ class InteractivePointsApp:
         )
 
         # Store selected points for drawing lines
-        self.selected_points = []
         self.lines = {}
+        self.selected_points = []
 
         # Data logs
         self.current_path_len = 0
         self.optimal_path_len = 0
 
+        # Create text widget and specify size.
+        # T = tk.Text(self.master, height=5, width=52)
+        # T.pack()
 
+        self.time_label = tk.Label(self.master, font=("Arial", 16), fg="blue")
+        self.time_label.pack(pady=10)
+        self.update_time()
+
+        # Other initializations (e.g., canvas, buttons, etc.)
         self.master.mainloop()
+
+    def update_time(self):
+        """Update the time widget with the current time."""
+        current_time = datetime.now().strftime("%H:%M:%S")
+        self.time_label.config(text=f"Current Time: {current_time}")
+        # Schedule the next update
+        self.master.after(1000, self.update_time)  # Update every 1000ms (1 second)
 
     def load_next_experiment(self):
         print("LOAD NEXT")
@@ -90,8 +109,46 @@ class InteractivePointsApp:
         # Draw points on canvas
         self.draw_points()
 
+
+        # Reset data
+        self.lines = {}
+        self.selected_points = []
+        self.current_path_len = 0
+        self.optimal_path_len = 0
+
+
+    def log_experiment(self):
+        """Save the points from the current path to a JSON file with a time-dependent name."""
+
+        # Extract the points involved in the current path
+        path_points = []
+        for point_pair in self.lines:
+            path_points.append({
+                "point1": point_pair[0],
+                "point2": point_pair[1]
+            })
+
+        # Save the path to a JSON file
+        self.exp_data = {
+            "experiment": self.experiment_num,
+            "path": path_points
+        }
+
+
+    def save_logs(self):
+        # Generate a time-dependent filename
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        file_name = f"Experiment_{timestamp}.json"
+        file_name = os.path.join("tests_runs",file_name)
+        try:
+            with open(file_name, "w") as file:
+                json.dump(self.exp_data, file, indent=4)
+            print(f"Path saved successfully to {file_name}.")
+        except Exception as e:
+            print(f"Error saving path: {e}")
+
     def button_clicked(self):
-        self.read_text_input()
+        self.log_experiment()
 
         if self.experiment_end():
             showinfo(
@@ -99,7 +156,9 @@ class InteractivePointsApp:
                 message="In Fact, "
                         "You Did So Well I’m Going To Note This On Your File In the Commendations Section. "
                         "Oh, There’s Lots Of Room Here." )
-            self.root.destroy()
+            if self.log_data:
+                self.save_logs()
+            self.master.destroy()
         else:
             showinfo(
                 title="NEXT",
@@ -108,39 +167,50 @@ class InteractivePointsApp:
 
 
     def experiment_end(self):
-        return len(self.experiments) == self.experiment_num
+        return self.total_num_experiments <= self.experiment_num
 
     def draw_points(self):
         """Draw points on the canvas and bind click events."""
 
         points = self.current_experiment.locations
-        # print(self.current_experiment.locations)
+
         for point in points:
             x, y = point["x"], point["y"]
             # Draw a small circle to represent the point
-            point_id = self.canvas.create_oval(x - RADIUS, y - RADIUS, x + RADIUS, y + RADIUS,
-                                               outline="black",fill="white",stipple="gray50")
+            point_id = self.canvas.create_oval(x - self.radius, y - self.radius, x + self.radius, y + self.radius,
+                                               outline="black",fill="white",stipple="gray50",
+                                               tags=("point"+point["name"]))
             # Store point data as tags
-            self.canvas.itemconfig(point_id, tags=("point"+point["name"],))
-            # self.canvas.itemconfig(point_id,"-alpha",0.5)
-            # print(point_id)
+            self.canvas.itemconfig(point_id, tags=("point"+point["name"]))
             # Bind click event
             self.canvas.tag_bind(point_id, "<Button-1>", lambda event, p=point: self.on_point_click(event, p))
 
     def on_point_click(self, event, point):
         """Handle point click event."""
-        print(f"Clicked on point: {point['name']} at ({point['x']}, {point['y']})")
-        self.selected_points.append(point)
-        self.highlight_point(point)
-        # ADD DESELECT HANDLE
+        if point in self.selected_points:
+            self.reset_point_color(point)
+            self.selected_points.pop()
+            print(f"Deselect on point: {point['name']} at ({point['x']}, {point['y']})")
+        else:
+            self.selected_points.append(point)
+            self.highlight_point(point)
+            print(f"Clicked on point: {point['name']} at ({point['x']}, {point['y']})")
+
 
         # If two points are selected, either draw or delete a line
         if len(self.selected_points) == 2:
             p1, p2 = self.selected_points
             self.toggle_line_between_points(p1, p2)
-            self.selected_points.clear()
-            self.reset_point_colors(p1, p2)
+            self.selected_points.pop(0)
+            self.reset_point_color(p1)
+            # self.reset_point_color(p2)
 
+    def on_line_click(self, event, line_id):
+        """Handle line click event by deleting the line."""
+        self.canvas.delete(line_id)
+        # Remove line from `self.lines`
+        self.lines = {pair: lid for pair, lid in self.lines.items() if lid != line_id}
+        print("Line deleted")
 
     def toggle_line_between_points(self, p1, p2):
         """Toggle line between two selected points: draw if not present, delete if present."""
@@ -154,42 +224,38 @@ class InteractivePointsApp:
             # Line does not exist; create it
             x1, y1 = p1["x"], p1["y"]
             x2, y2 = p2["x"], p2["y"]
-            line_id = self.canvas.create_line(x1, y1, x2, y2, fill="red", width=2)
+            line_id = self.canvas.create_line(x1, y1, x2, y2, fill="red", width=2,dash=(5, 3))
             self.lines[point_pair] = line_id
             print(f"Drew line between {p1['name']} and {p2['name']}")
+            self.canvas.tag_bind(line_id, "<Button-1>",
+                                 lambda event, l=line_id: self.on_line_click(event, line_id))
 
     def highlight_point(self, point):
         """Change the color of the selected point to indicate selection."""
-        print(point["name"])
-        point = self.canvas.find_withtag(point["name"])
-        self.canvas.itemconfig(point, fill="green")  # Change color to green
+        point = self.canvas.find_withtag("point"+point["name"])
+        self.canvas.itemconfig(point, fill="blue")  # Change color to green
 
-    def reset_point_colors(self,point1,point2):
-        point = self.canvas.find_withtag(point1["name"])
-        self.canvas.itemconfig(point, fill="blue")
-
-        point = self.canvas.find_withtag(point2["name"])
-        self.canvas.itemconfig(point, fill="blue")
-
-    def read_text_input(self):
-        """Reads the text from the input field and prints it."""
-        text = self.text_input.get()
-        print(f"Text input: {text}")
+    def reset_point_color(self,point):
+        point = self.canvas.find_withtag("point"+point["name"])
+        self.canvas.itemconfig(point, fill="white")
 
 def count_directories(path):
     return len(next(os.walk(path))[1])
 
 def run_gui(experiments):
-    root = tk.Tk()
-    app = InteractivePointsApp(root, experiments=experiments)
-    root.mainloop()
+    InteractivePointsApp(experiments=experiments)
+#
+# def reset_timer(event=None):
+#     global after_id
+#     if after_id is not None:
+#         root.after_cancel(after_id)
+#     after_id = root.after(5000, session_end)
 
 if __name__ == "__main__":
     path = os.path.split(os.getcwd())[0]
     example_exp = create_test_exp("14")
 
-    app = InteractivePointsApp(experiments=example_exp)
-    # app.root.mainloop()
+    app = InteractivePointsApp(experiments=[example_exp])
 
     # TODO: SAY CURRENT VS OPTIMAL DISTANCE
     # GIVE AI CHANCE TO FIX

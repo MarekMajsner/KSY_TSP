@@ -2,54 +2,69 @@ import os
 from PIL import Image
 import math
 import json
-import matplotlib.pyplot as plt
+
+IMAGE_BORDER = 5 # NUMBER OF PIXELS FOR THE BLACK BORDER
 
 class TSP_experiment:
-    def __init__(self, map_info=None, map_solution=None, image_path_exp=None, image_path_sol=None):
-        print(map_info)
-        self.locations = None
+    def __init__(self, map_info=None, map_solution=None, image_path_exp=None, image_path_sol=None, name = None):
+        """
+
+        :param map_info:
+        :param map_solution:
+        :param image_path_exp:
+        :param image_path_sol:
+        """
+        self.exp_name = name
         self.image_path_exp = image_path_exp
+        self.image_path_sol = image_path_sol
         if self.image_path_exp:
             try:
                 self.image = Image.open(self.image_path_exp)
             except Exception as e:
                 raise f"Error loading image: {e}"
 
+        if self.image_path_sol:
+            try:
+                self.sol_image = Image.open(self.image_path_exp)
+            except Exception as e:
+                raise f"Error loading solution image: {e}"
+
         if not map_info is None:
             """ 
             LOAD MAP INFO
             """
+            image_border = IMAGE_BORDER
+            image_size = self.image.size
             self.map_info = map_info["map_info"]
             self.max_x = float(self.map_info["lim_x_max"])
             self.max_y = float(self.map_info["lim_y_max"])
-            self.xscale = 322 / float(self.map_info["lim_x_max"])
-            self.x_offset = 5
+            self.xscale = (image_size[0]- 2*image_border) / float(self.map_info["lim_x_max"])
+            self.yscale = (image_size[1] - 2*image_border)/ float(self.map_info["lim_y_max"])
+
+            self.border_offset = image_border
+
             """ 
             LOAD EXPERIMENT POINTS
             """
             self.locations = map_info["points"]
-            print(self.locations)
             self.points_pos_resize()
-            print(self.locations)
-        if not map_info is None:
+
+        if not map_solution is None:
+            self.map_solution = map_solution
             print("TODO")
-
-        self.optimal_distance = 0
-        self.image = None
-
-        # self.image_path_exp = image_path_exp
-        self.image_path_sol = None
+            self.optimal_distance = 0
+            self.image_path_sol = None
 
     def points_pos_resize(self):
         for entry in self.locations:
             self.points_pos_string_to_float(entry)
             self.flip_pos_axis(entry)
             self.scale_pos(entry)
-            self.border_offset(entry)
+            self.add_border_offset(entry)
 
-    def border_offset(self,entry):
-        entry['x'] = entry['x']+self.x_offset
-        entry['y'] = entry['y'] +self.x_offset
+    def add_border_offset(self,entry):
+        entry['x'] = entry['x'] + self.border_offset
+        entry['y'] = entry['y'] + self.border_offset
 
     def points_pos_string_to_float(self,entry):
         entry['x'] = float(entry['x'])
@@ -59,10 +74,9 @@ class TSP_experiment:
         entry['x'] = entry['x']
         entry['y'] = self.max_y - entry['y']
 
-
     def scale_pos(self,entry):
         entry['x'] = entry['x']*self.xscale
-        entry['y'] = entry['y']*self.xscale
+        entry['y'] = entry['y']*self.yscale
 
     def calculate_distance(self, other):
         """Calculate distance to another Location instance."""
@@ -82,8 +96,6 @@ class TSP_experiment:
         return f"Location()"
 
 
-    # def load_experiment(self,path):
-
 def create_test_exp(name = "0", path=None):
     """
     This function loads single experiment specified by number
@@ -101,21 +113,16 @@ def create_test_exp(name = "0", path=None):
     with open(json_path, "r") as file:
         exp_params = json.load(file)
 
+    json_path_solution = os.path.join(sol_path, name + ".json")
 
-    print(exp_params)
+    with open(json_path_solution, "r") as file:
+        solution_params = json.load(file)
 
     png_path = os.path.join(prob_path, name + ".png")
-    print(png_path)
-    image = Image.open(png_path)
-    image_path = png_path
-    # print(image.size)
-    # Load solution to experiment
-    print(exp_params['points'])
-    example_exp = TSP_experiment(map_info=exp_params, image_path_exp=png_path, image_path_sol=None)
+    png_path_solution = os.path.join(prob_path, name + ".png")
+    example_exp = TSP_experiment(map_info=exp_params, map_solution=solution_params,
+                                 image_path_exp=png_path, image_path_sol=png_path_solution, name=name)
     return example_exp
-
-def count_directories(path):
-    return len(next(os.walk(path))[1])
 
 def list_json_files(directory):
     """
@@ -126,7 +133,7 @@ def list_json_files(directory):
     """
     try:
         # List all files in the directory and filter for .json files
-        json_files = [file for file in os.listdir(directory) if file.endswith('.json')]
+        json_files = [os.path.splitext(file)[0] for file in os.listdir(directory) if file.endswith('.json')]
         return json_files
     except FileNotFoundError:
         print(f"Error: The directory '{directory}' does not exist.")
@@ -147,59 +154,16 @@ def isEmpty(path):
         print("The path is either for a file or not valid")
 
 
-def find_all_experiments(directory):
-    """
-    Retrieves all PNG and JSON file pairs in the specified directory.
-
-    Args:
-        directory (str): The path to the directory to scan.
-
-    Returns:
-        list of tuples: List of (png_file, json_file) pairs.
-    """
-    # Ensure the directory exists
-    if not os.path.isdir(directory):
-        raise ValueError(f"The provided path '{directory}' is not a valid directory.")
-
-    # List all files in the directory
-    files = os.listdir(directory)
-
-    # Filter files by extensions
-    png_files = {os.path.splitext(f)[0]: f for f in files if f.lower().endswith('.png')}
-    json_files = {os.path.splitext(f)[0]: f for f in files if f.lower().endswith('.json')}
-
-    # Find matching pairs based on the base file name
-    pairs = [(png_files[name], json_files[name]) for name in png_files if name in json_files]
-
-    return pairs
-
-def load_experiments(num_experiments=None, single_experiment=None):
+def load_experiments(args=None):
     experiments = []
 
     path = os.getcwd()
     prob_path = os.path.join(path, "experiments", "problems")
-    sol_path = os.path.join(path, "experiments", "solutions")
+    experiment_names = list_json_files(prob_path)
 
-    if not single_experiment is None:
-        print("Running single experiment", single_experiment)
-
-    experiments_pairs = find_all_experiments(prob_path)
-
-    print("Number of experiments:", len(experiments_pairs)/2)
-    print(experiments_pairs)
-    for i in range(len(experiments_pairs)):
-        exp_name_json = experiments_pairs[i][1]
-        exp_name_png =  experiments_pairs[i][2]
-        print(exp_name_png)
-        print(exp_name_json)
-        exp_path_png = os.path.join(prob_path, exp_name_png)
-        exp_path_json = os.path.join(prob_path, exp_name_json)
-
-        if os.path.isfile(exp_path_json):
-            with open(exp_path_json, "r") as file:
-                exp_params = json.load(file)
-
-        print(exp_params('map_info'))
-
-        experiments.append(TSP_experiment(map_info=exp_params, image_path_exp=exp_path_png))
+    print("Number of experiments:", len(experiment_names))
+    for exp_name in experiment_names:
+        experiment = create_test_exp(exp_name,path)
+        experiments.append(experiment)
+        print("Loaded experiment: ", exp_name)
     return experiments

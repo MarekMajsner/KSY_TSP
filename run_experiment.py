@@ -1,28 +1,22 @@
 from utils.experiment import load_experiments
-from utils.gui import run_gui
+from utils.gui import InteractivePointsApp
 import argparse
 import os
 
-def count_directories(path):
-    return len(next(os.walk(path))[1])
-
-def main():
+def main(args):
     print("You look great, by the way. Very healthy.")
-    exp = load_experiments()
-    run_gui(exp)
-    print("Congratulations, the test is now over.")
-    print("In Fact, "
-          "You Did So Well I’m Going To Note This On Your File In the Commendations Section. "
-          "Oh, There’s Lots Of Room Here.")
+    exp = load_experiments(args)
+    app = InteractivePointsApp(experiments=exp,args=args)
 
 if __name__=="__main__":
     parser = argparse.ArgumentParser(
-        prog='ProgramName',
-        description='What the program does',
-        epilog='Text at the bottom of help')
-    parser.add_argument('-t', '--testload',
-                        action='store_true')  # on/off flag
-    parser.add_argument('-c', '--count')  # option that takes a value
+        prog='Traveling Salesmen Human Evaluation App',
+        description='Provides user with series of TSP with increasing difficulty')
+    parser.add_argument('-d', '--debug',
+                        action='store_true')
+    parser.add_argument('-l', '--nologs',
+                        action='store_false')
+    parser.add_argument('-t', '--test')  # option that takes a value
     args = parser.parse_args()
     print(args)
-    main()
+    main(args)
