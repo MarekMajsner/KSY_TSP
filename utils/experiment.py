@@ -49,6 +49,9 @@ class TSP_experiment:
             self.locations = map_info["points"]
             self.points_pos_resize()
 
+            self.named_locations = {entry['name']: (entry['x'], entry['y']) for entry in self.locations}
+
+
         if not map_solution is None:
             self.map_solution = map_solution
             # TODO: create funtion to compute the length from the order to check for scaling issues
@@ -75,6 +78,8 @@ class TSP_experiment:
         entry['y'] = self.max_y - entry['y']
 
     def scale_pos(self,entry):
+        if self.xscale != self.yscale:
+            print("SCALING ERROR COULD BE PRESENT NON SQUARE IMAGE")
         entry['x'] = entry['x']*self.xscale
         entry['y'] = entry['y']*self.yscale
 
@@ -156,7 +161,7 @@ def isEmpty(path):
 
 def load_experiments(args=None):
     if not args.name is None:
-        example_exp = create_test_exp(args.filename)
+        example_exp = create_test_exp(args.name)
         return [example_exp]
 
     experiments = []
