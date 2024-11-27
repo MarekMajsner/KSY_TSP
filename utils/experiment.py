@@ -29,11 +29,15 @@ class TSP_experiment:
             except Exception as e:
                 raise f"Error loading solution image: {e}"
 
+        """IMAGE BORDER SWITCH CASE"""
+        image_border = IMAGE_BORDER
+        if "big" in self.exp_name:
+            image_border = 12
+
         if not map_info is None:
             """ 
             LOAD MAP INFO
             """
-            image_border = IMAGE_BORDER
             image_size = self.image.size
             self.map_info = map_info["map_info"]
             self.max_x = float(self.map_info["lim_x_max"])

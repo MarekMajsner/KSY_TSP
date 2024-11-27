@@ -49,9 +49,15 @@ class InteractivePointsApp:
         self.reset_data()
         print(self.experiment_num)
         print(self.experiments)
+
+        """PROBLEM NAME LABEL"""
+        self.name_label = tk.Label(self.master, font=("Arial", 16), fg="blue")
+        self.name_label.pack(pady=5)
         # TODO: ADD INTRO SCREEN WITH DESCRIPTION AND HELP
         self.load_next_experiment()
 
+
+        # self.name_label.config(text=f"Problem name: {self.current_experiment.exp_name}")
 
         """Submit button"""
         submit_button = tk.Button(
@@ -113,10 +119,14 @@ class InteractivePointsApp:
             # Canvas for drawing
             self.canvas = tk.Canvas(self.master, width=width, height=height, bg="white")
             self.canvas.pack(anchor=tk.CENTER, expand=True)
+            self.name_label.config(text=f"Problem name: {self.current_experiment.exp_name}")
         else:
+            self.name_label.config(text=f"Problem name: {self.current_experiment.exp_name}")
             self.canvas.delete("all")
             # Canvas for drawing
-            self.canvas.width = width
+            self.canvas.config(width=width,height=height)
+            # self.canvas.width = width
+            # self.canvas.height = height
 
                            # (self.root, width=width, height=height, bg="white"))
             self.canvas.pack(anchor=tk.CENTER, expand=True)
@@ -200,32 +210,34 @@ class InteractivePointsApp:
         return True
 
     def submit_button_clicked(self):
+        path_is_valid = True
         if not self.args.debug:
-            if not self.check_path_valid():
-                showinfo(
-                    title="INVALID PATH",
-                    message="Please, check your path is closed loop connecting all points")
-            else:
-                self.log_experiment()
-                if self.experiment_end():
-                    showinfo(
-                        title="Congratulations, the test is now over.",
-                        message="In Fact, "
-                                "You Did So Well I’m Going To Note This On Your File In the Commendations Section. "
-                                "Oh, There’s Lots Of Room Here.")
-                    if self.log_data:
-                        self.save_logs()
-                    self.master.destroy()
-                else:
-                    showinfo(
-                        title="NEXT",
-                        message="GOOD JOB!!!")
-                    # TODO: WE COULD GIVE THE USER INFO AFTER FEW EXPERIMENTS
-                    # self.current_len_label = tk.Label(self.master, font=("Arial", 16), fg="blue")
-                    # self.current_len_label.pack(pady=5)
-                    # self.update_len()
-                    self.load_next_experiment()
+            path_is_valid = self.check_path_valid()
 
+        if path_is_valid:
+            self.log_experiment()
+            if self.experiment_end():
+                showinfo(
+                    title="Congratulations, the test is now over.",
+                    message="In Fact, "
+                            "You Did So Well I’m Going To Note This On Your File In the Commendations Section. "
+                            "Oh, There’s Lots Of Room Here.")
+                if self.log_data:
+                    self.save_logs()
+                self.master.destroy()
+            else:
+                showinfo(
+                    title="NEXT",
+                    message="GOOD JOB!!!")
+                # TODO: WE COULD GIVE THE USER INFO AFTER FEW EXPERIMENTS
+                # self.current_len_label = tk.Label(self.master, font=("Arial", 16), fg="blue")
+                # self.current_len_label.pack(pady=5)
+                # self.update_len()
+                self.load_next_experiment()
+        else:
+            showinfo(
+                title="INVALID PATH",
+                message="Please, check your path is closed loop connecting all points")
 
     def experiment_end(self):
         return self.total_num_experiments <= self.experiment_num
