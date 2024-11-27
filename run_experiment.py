@@ -14,7 +14,7 @@ if __name__=="__main__":
         description='Provides user with series of TSP with increasing difficulty')
     parser.add_argument('-d', '--debug',
                         action='store_true')
-    parser.add_argument('-l', '--nologs',
+    parser.add_argument('-nl', '--nologs',
                         action='store_true')
     parser.add_argument('-n','--name')
     args = parser.parse_args()

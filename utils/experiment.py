@@ -50,7 +50,7 @@ class TSP_experiment:
             self.points_pos_resize()
 
             self.named_locations = {entry['name']: (entry['x'], entry['y']) for entry in self.locations}
-
+            self.num_locations = len(self.named_locations)
 
         if not map_solution is None:
             self.map_solution = map_solution

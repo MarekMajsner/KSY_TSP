@@ -2,8 +2,9 @@ import json
 import math
 import os
 import tkinter as tk
-from tkinter.messagebox import showinfo
+from tkinter.messagebox import showinfo, RETRY
 import time
+from collections import Counter
 
 from scipy.stats import false_discovery_control
 
@@ -19,6 +20,7 @@ class InteractivePointsApp:
         :param experiments:
         :param args:
         """
+        self.args = args
         self.num_actions = None
         self.optimal_path_len = None
         self.current_path_len = None
@@ -179,28 +181,50 @@ class InteractivePointsApp:
         except Exception as e:
             print(f"Error saving path: {e}")
 
-    def submit_button_clicked(self):
-        # TODO: Simple check if all points are used
-        self.log_experiment()
+    def check_path_valid(self):
+        """
+        Checks if all points are used and then if all points are used twice meaning a valid path is formed
+        :return:
+        """
 
-        if self.experiment_end():
-            showinfo(
-                title="Congratulations, the test is now over.",
-                message="In Fact, "
-                        "You Did So Well I’m Going To Note This On Your File In the Commendations Section. "
-                        "Oh, There’s Lots Of Room Here.")
-            if self.log_data:
-                self.save_logs()
-            self.master.destroy()
-        else:
-            showinfo(
-                title="NEXT",
-                message="GOOD JOB!!!")
-            # TODO: WE COULD GIVE THE USER INFO AFTER FEW EXPE
-            # self.current_len_label = tk.Label(self.master, font=("Arial", 16), fg="blue")
-            # self.current_len_label.pack(pady=5)
-            # self.update_len()
-            self.load_next_experiment()
+        path_points = []
+        for point_pair in self.lines:
+            path_points.append(point_pair[0])
+            path_points.append(point_pair[1])
+        counts = Counter(path_points)
+        if len(counts) != self.current_experiment.num_locations:
+            return False
+        for point in path_points:
+            if counts[point] !=2:
+                return False
+        return True
+
+    def submit_button_clicked(self):
+        if not self.args.debug:
+            if not self.check_path_valid():
+                showinfo(
+                    title="INVALID PATH",
+                    message="Please, check your path is closed loop connecting all points")
+            else:
+                self.log_experiment()
+                if self.experiment_end():
+                    showinfo(
+                        title="Congratulations, the test is now over.",
+                        message="In Fact, "
+                                "You Did So Well I’m Going To Note This On Your File In the Commendations Section. "
+                                "Oh, There’s Lots Of Room Here.")
+                    if self.log_data:
+                        self.save_logs()
+                    self.master.destroy()
+                else:
+                    showinfo(
+                        title="NEXT",
+                        message="GOOD JOB!!!")
+                    # TODO: WE COULD GIVE THE USER INFO AFTER FEW EXPERIMENTS
+                    # self.current_len_label = tk.Label(self.master, font=("Arial", 16), fg="blue")
+                    # self.current_len_label.pack(pady=5)
+                    # self.update_len()
+                    self.load_next_experiment()
 
 
     def experiment_end(self):
@@ -312,3 +336,4 @@ if __name__ == "__main__":
 
     # TODO: GITIGNORE
     # TODO: WHAT VALID PATH CHECKS DO WE WANT
+    # TODO: ADD INTRO
