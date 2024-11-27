@@ -11,8 +11,9 @@ from scipy.stats import false_discovery_control
 from utils.experiment import TSP_experiment, create_test_exp
 from datetime import datetime
 
-RADIUS = 20
+RADIUS = 25
 DECIMALS = 0
+LINE_WIDTH = 5
 class InteractivePointsApp:
     def __init__(self, experiments=None, args = None):
         """
@@ -311,7 +312,7 @@ class InteractivePointsApp:
             # Line does not exist; create it
             x1, y1 = p1["x"], p1["y"]
             x2, y2 = p2["x"], p2["y"]
-            line_id = self.canvas.create_line(x1, y1, x2, y2, fill="red", width=2,dash=(5, 3))
+            line_id = self.canvas.create_line(x1, y1, x2, y2, fill="red", width=LINE_WIDTH,dash=(5, 3))
             self.lines[point_pair] = line_id
             print(f"Drew line between {p1['name']} and {p2['name']}")
             self.canvas.tag_bind(line_id, "<Button-1>",
