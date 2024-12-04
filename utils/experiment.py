@@ -58,7 +58,6 @@ class TSP_experiment:
 
         if not map_solution is None:
             self.map_solution = map_solution
-            # TODO: create funtion to compute the length from the order to check for scaling issues
             self.optimal_distance = float(self.map_solution["map_info"]["length"])*self.xscale
             self.image_path_sol = None
 

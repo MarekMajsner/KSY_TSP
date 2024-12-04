@@ -11,9 +11,10 @@ from scipy.stats import false_discovery_control
 from utils.experiment import TSP_experiment, create_test_exp
 from datetime import datetime
 
-RADIUS = 25
+RADIUS = 20
 DECIMALS = 0
 LINE_WIDTH = 5
+SELECT_COLOR = 'red'
 class InteractivePointsApp:
     def __init__(self, experiments=None, args = None):
         """
@@ -33,6 +34,7 @@ class InteractivePointsApp:
         if not args is None:
             self.log_data = not args.nologs
         self.experiments = experiments
+        self.intro_frame = None
 
         self.total_num_experiments = len(self.experiments)
         self.experiment_num = 0
@@ -45,45 +47,15 @@ class InteractivePointsApp:
         self.master.title("TSP Human benchmark")
         self.canvas = None
 
-
-        # Store selected points for drawing lines
-        self.reset_data()
-        print(self.experiment_num)
-        print(self.experiments)
-
-        """PROBLEM NAME LABEL"""
-        self.name_label = tk.Label(self.master, font=("Arial", 16), fg="blue")
-        self.name_label.pack(pady=5)
+        from utils.intro import introduction_screen
         # TODO: ADD INTRO SCREEN WITH DESCRIPTION AND HELP
-        self.load_next_experiment()
+        if not args.debug:
+            introduction_screen(self)
+            print("LOADING INTRO")
+            self.master.mainloop()
+        else:
+            self.start_experiment()
 
-
-        # self.name_label.config(text=f"Problem name: {self.current_experiment.exp_name}")
-
-        """Submit button"""
-        submit_button = tk.Button(
-            self.master,
-            text='Submit',
-            compound=tk.LEFT,
-            command=self.submit_button_clicked
-        )
-        submit_button.pack(
-            ipadx=5,
-            ipady=5,
-            expand=True
-        )
-
-        # "DEBUG" LABELS
-        self.current_len_label = tk.Label(self.master, font=("Arial", 16), fg="blue")
-        self.current_len_label.pack(pady=5)
-        self.update_len()
-
-        self.time_label = tk.Label(self.master, font=("Arial", 16), fg="blue")
-        self.time_label.pack(pady=5)
-        self.start = time.time()
-        self.update_time()
-        # Other initializations (e.g., canvas, buttons, etc.)
-        self.master.mainloop()
 
     def update_len(self):
         """Update the widget with the current length."""
@@ -107,6 +79,95 @@ class InteractivePointsApp:
         # Schedule the next update
         self.master.after(1000, self.update_time)  # Update every 1000ms (1 second)
 
+    def clear_all(self):
+        """Clear all lines and reset the state."""
+        # Reset all points' colors
+        for point in self.current_experiment.locations:
+            self.reset_point_color(point)
+
+        # Remove all lines from the canvas
+        for line_id in self.lines.values():
+            self.canvas.delete(line_id)
+
+        # Reset the state variables
+        self.selected_points = []
+        self.lines = {}
+        self.current_path_len = 0
+        self.num_actions = 0
+
+        print("Cleared all lines and selections.")
+        self.update_len()
+
+    def start_experiment(self):
+        """Start the experiment by removing the introduction screen."""
+        # Destroy the introduction frame
+        if not self.intro_frame is None:
+            self.intro_frame.destroy()
+
+
+        """ESC to deselect bind"""
+        self.master.bind("<Escape>", self.clear_selection)
+
+        # Store selected points for drawing lines
+        self.reset_data()
+        # print(self.experiment_num)
+        # print(self.experiments)
+
+        """PROBLEM NAME LABEL"""
+        self.name_label = tk.Label(self.master, font=("Arial", 20), fg="blue",wraplength=600)
+        self.name_label.pack(pady=5)
+
+
+        """CURRENT LEN LABEL"""
+        self.current_len_label = tk.Label(self.master, font=("Arial", 16))
+        self.current_len_label.pack(pady=5)
+        self.update_len()
+        """TIME LABEL"""
+        self.time_label = tk.Label(self.master, font=("Arial", 16))
+        self.time_label.pack(pady=5)
+        self.start = time.time()
+        self.update_time()
+        self.load_next_experiment()
+
+
+
+        # self.name_label.config(text=f"Problem name: {self.current_experiment.exp_name}")
+
+        """Clear All button"""
+        clear_all_button = tk.Button(
+            self.master,
+            text="Clear All",
+            compound=tk.LEFT,
+            bg="red",
+            fg="white",
+            font=("Arial", 16),
+            command=self.clear_all
+        )
+        clear_all_button.pack(padx=5, pady=5, expand=False, side = "top")
+
+        """Submit button"""
+        submit_button = tk.Button(
+            self.master,
+            bg="green",
+            fg="white",
+            text='Submit',
+            font=("Arial", 16),
+            compound=tk.LEFT,
+            command=self.submit_button_clicked
+        )
+        submit_button.pack(
+            padx=5,
+            pady=5,
+
+            expand=False,
+            side = "top"
+        )
+
+        # Other initializations (e.g., canvas, buttons, etc.)
+        if self.intro_frame is None:
+            self.master.mainloop()
+
+
     def load_next_experiment(self):
 
         assert self.experiment_num < len(self.experiments)
@@ -119,10 +180,11 @@ class InteractivePointsApp:
         if self.canvas is None:
             # Canvas for drawing
             self.canvas = tk.Canvas(self.master, width=width, height=height, bg="white")
-            self.canvas.pack(anchor=tk.CENTER, expand=True)
-            self.name_label.config(text=f"Problem name: {self.current_experiment.exp_name}")
+            self.canvas.pack(expand=False,padx = 100)
+            self.canvas.bind("<Button-1>", self.clear_selection_on_background)
+            # self.name_label.config(text=f"Problem name: {self.current_experiment.exp_name}")
         else:
-            self.name_label.config(text=f"Problem name: {self.current_experiment.exp_name}")
+            # self.name_label.config(text=f"Problem name: {self.current_experiment.exp_name}, {}")
             self.canvas.delete("all")
             # Canvas for drawing
             self.canvas.config(width=width,height=height)
@@ -130,17 +192,21 @@ class InteractivePointsApp:
             # self.canvas.height = height
 
                            # (self.root, width=width, height=height, bg="white"))
-            self.canvas.pack(anchor=tk.CENTER, expand=True)
+            self.canvas.pack(expand=False,padx = 100)
             # self.canvas.pack()
-
+        self.name_label.config(text=f"Problem name: {self.current_experiment.exp_name}  {self.experiment_num}/{len(self.experiments)}")
         self.canvas.create_image(
             (width / 2, height / 2),
-            image=self.image
+            image=self.image,
+            tag="image"
         )
+        self.canvas.tag_bind("image", "<Button-1>", self.clear_selection())
+
         # Draw points on canvas
         self.draw_points()
 
         self.reset_data()
+
 
 
     def reset_data(self):
@@ -178,7 +244,13 @@ class InteractivePointsApp:
         }
         self.data_log[self.current_experiment.exp_name] = exp_data
 
-
+    def clear_selection_on_background(self, event):
+        """Clear selection if the background is clicked."""
+        # Check if the click is on a point
+        clicked_items = self.canvas.find_withtag("current")
+        if not any('point' in self.canvas.gettags(item)[0] for item in clicked_items):
+            self.clear_selection()
+            print("Cleared selection on background click.")
 
     def save_logs(self):
         # Generate a time-dependent filename
@@ -227,10 +299,11 @@ class InteractivePointsApp:
                     self.save_logs()
                 self.master.destroy()
             else:
-                showinfo(
-                    title="NEXT",
-                    message="GOOD JOB!!!")
-                # TODO: WE COULD GIVE THE USER INFO AFTER FEW EXPERIMENTS
+                if not self.args.debug:
+                    showinfo(
+                        title="NEXT",
+                        message="GOOD JOB!!!")
+                    # TODO: WE COULD GIVE THE USER INFO AFTER FEW EXPERIMENTS
                 # self.current_len_label = tk.Label(self.master, font=("Arial", 16), fg="blue")
                 # self.current_len_label.pack(pady=5)
                 # self.update_len()
@@ -313,6 +386,8 @@ class InteractivePointsApp:
             x1, y1 = p1["x"], p1["y"]
             x2, y2 = p2["x"], p2["y"]
             line_id = self.canvas.create_line(x1, y1, x2, y2, fill="red", width=LINE_WIDTH,dash=(5, 3))
+            self.canvas.tag_lower(line_id)
+            self.canvas.tag_lower("image")
             self.lines[point_pair] = line_id
             print(f"Drew line between {p1['name']} and {p2['name']}")
             self.canvas.tag_bind(line_id, "<Button-1>",
@@ -323,11 +398,21 @@ class InteractivePointsApp:
     def highlight_point(self, point):
         """Change the color of the selected point to indicate selection."""
         point = self.canvas.find_withtag("point"+point["name"])
-        self.canvas.itemconfig(point, fill="blue")  # Change color to green
+        self.canvas.itemconfig(point, fill=SELECT_COLOR)  # Change color to green
+        self.canvas.itemconfig(point, stipple="")
 
     def reset_point_color(self,point):
         point = self.canvas.find_withtag("point"+point["name"])
-        self.canvas.itemconfig(point, fill="white")
+        self.canvas.itemconfig(point, fill="white",stipple="gray50")
+
+    def clear_selection(self, event=None):
+        """Clear all selected points."""
+        if self.selected_points:
+            for point in self.selected_points:
+                self.reset_point_color(point)
+            self.selected_points = []
+            print("Selection cleared.")
+
 
 def count_directories(path):
     return len(next(os.walk(path))[1])
@@ -347,6 +432,14 @@ if __name__ == "__main__":
 
     app = InteractivePointsApp(experiments=[example_exp])
 
-    # TODO: GITIGNORE
-    # TODO: WHAT VALID PATH CHECKS DO WE WANT
+    # TODO: ADD INFO THAT NUMBERS ON IMAGES HAVE NO MEANING
     # TODO: ADD INTRO
+    # lbl.grid_forget()
+    # lbl.pack_forget()
+    # lbl.place_forget()
+    # self.myLabel.grid()
+    # TODO: FIRST SELECT TO SHOW OPTIMAL PATH
+    # TODO: ON SUBMIT GOOD JOB OR ALLOW TO OPTIMIZE
+    # TODO: # Convert the image to a Tkinter-compatible photo image
+    # photo_image = ImageTk.PhotoImage(image)
+    # TODO: USE GRID INSTEAD OF PACK
