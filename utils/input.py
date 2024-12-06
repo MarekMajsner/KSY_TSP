@@ -1,8 +1,7 @@
 def printtext():
     global e
     string = e.get()
-    print
-    string
+    print(string)
 
 
 from tkinter import *

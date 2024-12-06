@@ -35,6 +35,7 @@ class InteractivePointsApp:
             self.log_data = not args.nologs
         self.experiments = experiments
         self.intro_frame = None
+        self.optimize = False
 
         self.total_num_experiments = len(self.experiments)
         self.experiment_num = 0
@@ -48,7 +49,6 @@ class InteractivePointsApp:
         self.canvas = None
 
         from utils.intro import introduction_screen
-        # TODO: ADD INTRO SCREEN WITH DESCRIPTION AND HELP
         if not args.debug:
             introduction_screen(self)
             print("LOADING INTRO")
@@ -100,30 +100,32 @@ class InteractivePointsApp:
 
     def start_experiment(self):
         """Start the experiment by removing the introduction screen."""
+
         # Destroy the introduction frame
         if not self.intro_frame is None:
             self.intro_frame.destroy()
 
 
+
         """ESC to deselect bind"""
         self.master.bind("<Escape>", self.clear_selection)
 
-        # Store selected points for drawing lines
         self.reset_data()
-        # print(self.experiment_num)
-        # print(self.experiments)
 
         """PROBLEM NAME LABEL"""
         self.name_label = tk.Label(self.master, font=("Arial", 20), fg="blue",wraplength=600)
         self.name_label.pack(pady=5)
 
-
+        """DEBUG FRAME"""
+        self.debug_frame = tk.Frame(self.master)
+        self.debug_frame.pack(expand=True)
         """CURRENT LEN LABEL"""
-        self.current_len_label = tk.Label(self.master, font=("Arial", 16))
+        self.current_len_label = tk.Label(self.debug_frame, font=("Arial", 16))
         self.current_len_label.pack(pady=5)
         self.update_len()
+
         """TIME LABEL"""
-        self.time_label = tk.Label(self.master, font=("Arial", 16))
+        self.time_label = tk.Label(self.debug_frame, font=("Arial", 16))
         self.time_label.pack(pady=5)
         self.start = time.time()
         self.update_time()
@@ -134,7 +136,7 @@ class InteractivePointsApp:
         # self.name_label.config(text=f"Problem name: {self.current_experiment.exp_name}")
 
         """Clear All button"""
-        clear_all_button = tk.Button(
+        self.clear_all_button = tk.Button(
             self.master,
             text="Clear All",
             compound=tk.LEFT,
@@ -143,10 +145,10 @@ class InteractivePointsApp:
             font=("Arial", 16),
             command=self.clear_all
         )
-        clear_all_button.pack(padx=5, pady=5, expand=False, side = "top")
+        self.clear_all_button.pack(padx=5, pady=5, expand=False, side = "top")
 
         """Submit button"""
-        submit_button = tk.Button(
+        self.submit_button = tk.Button(
             self.master,
             bg="green",
             fg="white",
@@ -155,10 +157,9 @@ class InteractivePointsApp:
             compound=tk.LEFT,
             command=self.submit_button_clicked
         )
-        submit_button.pack(
+        self.submit_button.pack(
             padx=5,
             pady=5,
-
             expand=False,
             side = "top"
         )
@@ -166,6 +167,7 @@ class InteractivePointsApp:
         # Other initializations (e.g., canvas, buttons, etc.)
         if self.intro_frame is None:
             self.master.mainloop()
+
 
 
     def load_next_experiment(self):
@@ -206,6 +208,12 @@ class InteractivePointsApp:
         self.draw_points()
 
         self.reset_data()
+
+        showinfo(
+            title="Instructions!!!",
+            message="First connect the points as fast as possible with the shortest path you can find."
+                    "Then you will be granted time to optimize.")
+        self.start = time.time()  # reset time for proper start
 
 
 
@@ -288,6 +296,7 @@ class InteractivePointsApp:
             path_is_valid = self.check_path_valid()
 
         if path_is_valid:
+            self.debug_frame.pack_forget()
             self.log_experiment()
             if self.experiment_end():
                 showinfo(
@@ -300,14 +309,32 @@ class InteractivePointsApp:
                 self.master.destroy()
             else:
                 if not self.args.debug:
-                    showinfo(
-                        title="NEXT",
-                        message="GOOD JOB!!!")
-                    # TODO: WE COULD GIVE THE USER INFO AFTER FEW EXPERIMENTS
-                # self.current_len_label = tk.Label(self.master, font=("Arial", 16), fg="blue")
-                # self.current_len_label.pack(pady=5)
-                # self.update_len()
-                self.load_next_experiment()
+                    if self.optimize:
+                        self.optimize = False
+                        self.load_next_experiment()
+                        self.debug_frame.pack_forget()
+                        # self.clear_all_button.pack(padx=5, pady=5, expand=False, side="bottom")
+                        # self.submit_button.pack(padx=5, pady=5, expand=False, side="bottom")
+                    else:
+                        if self.current_path_len <= self.optimal_path_len:
+                            showinfo(
+                                title="NEXT",
+                                message="GOOD JOB!!! Your path was optimal")
+                        else:
+                            # Second stage of each experiment using iteration planning
+                            showinfo(
+                                title="OPTIMIZE??",
+                                message=f"GOOD JOB!!! "
+                                        f"Length: {self.current_path_len:.{DECIMALS}f} Optimal: {self.optimal_path_len:.{DECIMALS}f}")
+                            self.optimize = True
+                            self.current_experiment.exp_name = self.current_experiment.exp_name + "OPTIMIZE"
+                            # self.load_next_experiment()
+                            self.debug_frame.pack()
+                            self.clear_all_button.pack(padx=5, pady=5, expand=False, side="bottom")
+                            self.submit_button.pack(padx=5, pady=5, expand=False, side="bottom")
+
+
+
         else:
             showinfo(
                 title="INVALID PATH",
@@ -433,13 +460,8 @@ if __name__ == "__main__":
     app = InteractivePointsApp(experiments=[example_exp])
 
     # TODO: ADD INFO THAT NUMBERS ON IMAGES HAVE NO MEANING
-    # TODO: ADD INTRO
-    # lbl.grid_forget()
-    # lbl.pack_forget()
-    # lbl.place_forget()
-    # self.myLabel.grid()
+    # TODO: HIDE DEBUG INFO
+
     # TODO: FIRST SELECT TO SHOW OPTIMAL PATH
     # TODO: ON SUBMIT GOOD JOB OR ALLOW TO OPTIMIZE
-    # TODO: # Convert the image to a Tkinter-compatible photo image
-    # photo_image = ImageTk.PhotoImage(image)
-    # TODO: USE GRID INSTEAD OF PACK
+    # TODO: LOG THE DIFFERENT PATHS
