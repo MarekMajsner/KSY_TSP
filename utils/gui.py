@@ -14,6 +14,7 @@ from datetime import datetime
 RADIUS = 20
 DECIMALS = 0
 LINE_WIDTH = 5
+SCALING_ERROR_MARGIN = 0.001
 SELECT_COLOR = 'red'
 class InteractivePointsApp:
     def __init__(self, experiments=None, args = None):
@@ -118,7 +119,8 @@ class InteractivePointsApp:
 
         """DEBUG FRAME"""
         self.debug_frame = tk.Frame(self.master)
-        self.debug_frame.pack(expand=True)
+        if self.args.debug:
+            self.debug_frame.pack(expand=True)
         """CURRENT LEN LABEL"""
         self.current_len_label = tk.Label(self.debug_frame, font=("Arial", 16))
         self.current_len_label.pack(pady=5)
@@ -209,10 +211,11 @@ class InteractivePointsApp:
 
         self.reset_data()
 
-        showinfo(
-            title="Instructions!!!",
-            message="First connect the points as fast as possible with the shortest path you can find."
-                    "Then you will be granted time to optimize.")
+        if not self.args.debug:
+            showinfo(
+                title="Instructions!!!",
+                message="First connect the points as fast as possible with the shortest path you can find."
+                        "Then you will be granted time to optimize.")
         self.start = time.time()  # reset time for proper start
 
 
@@ -264,6 +267,9 @@ class InteractivePointsApp:
         # Generate a time-dependent filename
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         file_name = f"Experiment_{timestamp}.json"
+        if self.args.debug:
+            file_name = "DEBUG" + file_name
+
         file_name = os.path.join("tests_runs",file_name)
         try:
             with open(file_name, "w") as file:
@@ -316,23 +322,25 @@ class InteractivePointsApp:
                         # self.clear_all_button.pack(padx=5, pady=5, expand=False, side="bottom")
                         # self.submit_button.pack(padx=5, pady=5, expand=False, side="bottom")
                     else:
-                        if self.current_path_len <= self.optimal_path_len:
+                        if self.current_path_len <= self.optimal_path_len + SCALING_ERROR_MARGIN:
                             showinfo(
-                                title="NEXT",
-                                message="GOOD JOB!!! Your path was optimal")
+                                title="Next Experiment",
+                                message="GOOD JOB!!!\n Your path was optimal")
                         else:
                             # Second stage of each experiment using iteration planning
                             showinfo(
-                                title="OPTIMIZE??",
-                                message=f"GOOD JOB!!! "
-                                        f"Length: {self.current_path_len:.{DECIMALS}f} Optimal: {self.optimal_path_len:.{DECIMALS}f}")
+                                title="Optimize",
+                                message=f"Now you will have time to optimize your solution\n"
+                                        f"Your Length: {self.current_path_len:.{DECIMALS}f} Optimal: {self.optimal_path_len:.{DECIMALS}f}")
                             self.optimize = True
                             self.current_experiment.exp_name = self.current_experiment.exp_name + "OPTIMIZE"
                             # self.load_next_experiment()
                             self.debug_frame.pack()
-                            self.clear_all_button.pack(padx=5, pady=5, expand=False, side="bottom")
-                            self.submit_button.pack(padx=5, pady=5, expand=False, side="bottom")
-
+                            self.clear_all_button.pack(padx=5, pady=5, expand=False, side="top")
+                            self.submit_button.pack(padx=5, pady=5, expand=False, side="top")
+                else:
+                    self.debug_frame.pack()
+                    self.load_next_experiment()
 
 
         else:
@@ -458,10 +466,3 @@ if __name__ == "__main__":
     example_exp = create_test_exp("14",path)
 
     app = InteractivePointsApp(experiments=[example_exp])
-
-    # TODO: ADD INFO THAT NUMBERS ON IMAGES HAVE NO MEANING
-    # TODO: HIDE DEBUG INFO
-
-    # TODO: FIRST SELECT TO SHOW OPTIMAL PATH
-    # TODO: ON SUBMIT GOOD JOB OR ALLOW TO OPTIMIZE
-    # TODO: LOG THE DIFFERENT PATHS
