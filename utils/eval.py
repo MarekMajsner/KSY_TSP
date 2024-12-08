@@ -11,8 +11,10 @@ if __name__ == "__main__":
     path = os.path.split(os.getcwd())[0]
     path = os.path.join(path, exp_dir)
     experiments = eu.load_multiple_jsons(path)
-    for exp in experiments:
-        print(exp)
+    print("Number Of Loaded experiments: ", len(experiments))
+    for run in experiments:
+        experiment_names = run.keys()
+        print(experiment_names)
     #
     # eu.plot_time_vs_path_length(data)  # Time vs Path Length
     # eval_utils.plot_paths(data, "15_7")  # Replace "15_7" with the experiment key you want to visualize
