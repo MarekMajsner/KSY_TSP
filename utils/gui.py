@@ -326,6 +326,7 @@ class InteractivePointsApp:
                             showinfo(
                                 title="Next Experiment",
                                 message="GOOD JOB!!!\n Your path was optimal")
+                            self.load_next_experiment()
                         else:
                             # Second stage of each experiment using iteration planning
                             showinfo(
