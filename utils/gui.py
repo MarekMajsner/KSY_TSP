@@ -332,11 +332,12 @@ class InteractivePointsApp:
                             showinfo(
                                 title="Optimize",
                                 message=f"Now you will have time to optimize your solution\n"
-                                        f"Your Length: {self.current_path_len:.{DECIMALS}f} Optimal: {self.optimal_path_len:.{DECIMALS}f}")
+                                         f"Your Length: {self.current_path_len:.{DECIMALS}f} Optimal: {self.optimal_path_len:.{DECIMALS}f}")
                             self.optimize = True
                             self.current_experiment.exp_name = self.current_experiment.exp_name + "OPTIMIZE"
                             # self.load_next_experiment()
                             self.debug_frame.pack()
+                            self.start = time.time()
                             self.clear_all_button.pack(padx=5, pady=5, expand=False, side="top")
                             self.submit_button.pack(padx=5, pady=5, expand=False, side="top")
                 else:
