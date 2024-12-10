@@ -172,7 +172,7 @@ def load_experiments(args=None):
     path = os.getcwd()
     prob_path = os.path.join(path, "experiments", "problems")
     experiment_names = list_json_files(prob_path)
-    experiment_names.sort(reverse=True)
+    experiment_names.sort()
     print("Number of experiments:", len(experiment_names))
     for exp_name in experiment_names:
         experiment = create_test_exp(exp_name,path)
