@@ -1,0 +1,21 @@
+[project]
+name = "KSY_TSP"
+version = "0.1.0"
+description = "Traveling salesman problem experiment."
+authors = [
+    {name = "majsner", email = "majsnmar@cvut.cz"},
+    {name = "kubista"},
+]
+dependencies = [
+    "pillow>=10.4.0",
+    "numpy>=1.26.4",
+    "pandas>=2.2.2",
+    "matplotlib>=3.9.2",
+]
+requires-python = ">=3.8"
+readme = "README.md"
+license = {text = "BSDv3"}
+
+[build-system]
+requires = ["pdm-backend"]
+build-backend = "pdm.backend"
