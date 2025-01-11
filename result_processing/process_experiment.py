@@ -7,6 +7,7 @@ if __name__ == "__main__":
     path_to_json = '../experiment_data/KSY_27_11_2024'
     json_files = [pos_json for pos_json in os.listdir(path_to_json) if pos_json.endswith('.json')]
     print(json_files)
+    # json_files = [json_files[0]]
 
     df = pd.DataFrame(columns=['name', 'rel_len','len','time','num_action'])
 
