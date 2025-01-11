@@ -31,4 +31,5 @@ if __name__ == "__main__":
 
     df.boxplot(by='name', column =['rel_len'])
     df.boxplot(by='name', column =['time'])
+    df.boxplot(by='name', column=['num_action'])
     plt.show()

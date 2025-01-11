@@ -8,7 +8,7 @@ from collections import Counter
 
 from PIL import ImageTk, Image
 
-from scipy.stats import false_discovery_control
+#from scipy.stats import false_discovery_control
 
 from utils.experiment import TSP_experiment, create_test_exp
 from datetime import datetime

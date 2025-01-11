@@ -6,7 +6,7 @@ from tkinter.messagebox import showinfo, RETRY
 import time
 from collections import Counter
 
-from scipy.stats import false_discovery_control
+#from scipy.stats import false_discovery_control
 
 from utils.experiment import TSP_experiment, create_test_exp
 from datetime import datetime
