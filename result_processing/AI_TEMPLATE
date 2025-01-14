@@ -1,42 +1,36 @@
 { "Prompt": "Give me sequence of points which form the shortest hamilton cycle in the image.",
-"Prompt2": Give me a sequence of points that form the image's shortest hamilton cycle. # TRY THIS
     "0_5_100": {
-        "path": [
+        "path":
     },
     "1_6_9": {
-        "path": [
-           ],
+        "path":
         },
     "2_7_2": {
-        "path": [
-            ],
+        "path":
         },
     "3_8_14": {
-        "path": [
-          ],
+        "path":
         },
     "4_9_109": {
-        "path": [
+        "path":
             },
 
     "5_10": {
-        "path": [
+        "path":
             },
 
     "6_10_7": {
-        "path": [
-           ],
+        "path":
         },
 
     "7_14": {
-        "path": [
-            ],
+        "path":
         },
     "8_15_7": {
-        "path": [
+        "path":
            },
     "9_20_1_big": {
-        "path": [
+        "path":
             }
 
 }
